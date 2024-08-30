@@ -9,6 +9,8 @@ TagManager:
   - RenderS
   - destroy
   - destroyOnSpawning
+  - map
+  - gameover
   layers:
   - Default
   - TransparentFX

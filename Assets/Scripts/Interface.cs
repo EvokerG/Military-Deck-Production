@@ -15,25 +15,27 @@ public class Interface : MonoBehaviour
     [SerializeField] Button DeckButton;
     bool DeckVisibility;
     bool PrevDeckVisibility;
-    public List<Card> Deck = new List<Card>();
+    public static List<Card> Deck = new List<Card>();
     public List<GameObject> PhysicDeck;
     [SerializeField] GameObject CardPrefab;
     [SerializeField] Vector3 InitialCardPos;
     [SerializeField] Vector3 InitialCardRot;
     bool upd = false;
 
-    private void Awake()
+    private void Start()
     {
+        var side = Camera.main.GetComponent<MapVisualiser>().ViewSide;
         DeckButton.GetComponent<Button>().onClick.AddListener(() =>{
             DeckVisibility = !DeckVisibility;
         });
         DeckVisibility = false;
         PrevDeckVisibility = true;
-        Deck.Add(new Card(5, 0));
-        Deck.Add(new Card(2, 0));
-        Deck.Add(new Card(4, 0));
-        Deck.Add(new Card(1, 0));
-        Deck.Add(new Card(3, 0));
+        Debug.Log("Local side: "+side);
+        Deck.Add(new Card(5, side));
+        Deck.Add(new Card(2, side));
+        Deck.Add(new Card(4, side));
+        Deck.Add(new Card(1, side));
+        Deck.Add(new Card(3, side));
     }
 
     public void UpdLive()

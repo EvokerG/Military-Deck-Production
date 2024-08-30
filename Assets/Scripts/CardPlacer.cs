@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 public class CardPlacer : MonoBehaviour
@@ -19,27 +20,44 @@ public class CardPlacer : MonoBehaviour
         {
             Destroy(g.gameObject);
         }
+        if (TimerInter.CurTurn != (GameObject.Find("NetworkStorage").GetComponent<NetworkObject>().IsOwner ? (byte)GameObject.Find("NetworkStorage").GetComponent<NetworkObject>().OwnerClientId : (byte)((byte)GameObject.Find("NetworkStorage").GetComponent<NetworkObject>().OwnerClientId * -1 + 1)))
+        {
+            return;
+        }
+        if (TimerInter.Energy < Card.Cost)
+        {
+            return;
+        }
         Debug.Log("Spawning positions");
-        Card[,] map = Camera.main.GetComponent<MapVisualiser>().ExampleMap;
+        Card[,] map = Map.Read();
         byte side = Camera.main.GetComponent<MapVisualiser>().ViewSide;
         if (side == 1)
         {
-            Card[,] mirror = map;
-            for (int i = 0; i < Camera.main.GetComponent<MapVisualiser>().Columns; i++)
+            Debug.Log("Mirroring");
+            Card[,] mirror = new Card[5,6];
+            for (int i = 0; i < 5; i++)
             {
-                for (int j = 0; j < Camera.main.GetComponent<MapVisualiser>().Rows; j++)
+                for (int j = 0; j < 6; j++)
                 {
-                    mirror[i, j] = map[Camera.main.GetComponent<MapVisualiser>().Columns - i - 1, Camera.main.GetComponent<MapVisualiser>().Rows - j - 1];
+                    mirror[i, j] = map[4 - i, 5 - j];
                 }
             }
-            map = mirror;            
+            Map.DebugMap(map);
+            for (int i = 0; i < 5; i++)
+            {
+                for (int j = 0; j < 6; j++)
+                {
+                    map[i, j] = mirror[i,j];
+                }
+            }
         }
-        for (int i = 0; i < Camera.main.GetComponent<MapVisualiser>().Columns; i++)
+        Map.DebugMap(map);
+        for (int i = 0; i < 5; i++)
         {
-            for (int j = 0; j < Camera.main.GetComponent<MapVisualiser>().Rows; j++)
+            for (int j = 0; j < 6; j++)
             {
                 bool FullColumn = true;
-                for (int j1 = j; j1 < Camera.main.GetComponent<MapVisualiser>().Rows; j1++)
+                for (int j1 = 0; j1 < 6; j1++)
                 {
                     if (map[i, j1].Empty)
                     {
@@ -53,7 +71,7 @@ public class CardPlacer : MonoBehaviour
                 if (!map[i, j].Empty)
                 {
                     bool CanBeMoved = false;
-                    for (int j1 = j; j1 < Camera.main.GetComponent<MapVisualiser>().Rows; j1++)
+                    for (int j1 = j; j1 < 6; j1++)
                     {
                         if (map[i, j1].Empty)
                         {
@@ -62,21 +80,13 @@ public class CardPlacer : MonoBehaviour
                     }
                     if (map[i, j].Side == Card.Side)
                     {                        
-                        if (Card.Abilities.Contains(Card.Ability.Support) || (map[i, j].Abilities.Contains(Card.Ability.Cover) && CanBeMoved))
+                        if (Card.Abilities == 2 || (map[i, j].Abilities==1 && CanBeMoved))
                         {
-                            GameObject pick = Instantiate(PickPrefab, new Vector3(Camera.main.GetComponent<MapVisualiser>().ZeroX + i * Camera.main.GetComponent<MapVisualiser>().StepX, 2.5f, Camera.main.GetComponent<MapVisualiser>().ZeroZ + j * Camera.main.GetComponent<MapVisualiser>().StepZ), Quaternion.Euler(new Vector3(0, 0, 0)));
+                            GameObject pick = Instantiate(PickPrefab, new Vector3(Camera.main.GetComponent<MapVisualiser>().ZeroX + i * Camera.main.GetComponent<MapVisualiser>().StepX, 2.47f, Camera.main.GetComponent<MapVisualiser>().ZeroZ + j * Camera.main.GetComponent<MapVisualiser>().StepZ), Quaternion.Euler(new Vector3(0, 0, 0)));
                             pick.tag = "destroyOnSpawning";
                             pick.AddComponent<PlacingScriptTemp>();
-                            if (Card.Side == 1)
-                            {
-                                pick.GetComponent<PlacingScriptTemp>().RealI = 4 - i;
-                                pick.GetComponent<PlacingScriptTemp>().RealJ = 5 - j;
-                            }
-                            else
-                            {
-                                pick.GetComponent<PlacingScriptTemp>().RealI = i;
-                                pick.GetComponent<PlacingScriptTemp>().RealJ = j;
-                            }
+                            pick.GetComponent<PlacingScriptTemp>().RealI = (side == 0 ? i : 4 - i);
+                            pick.GetComponent<PlacingScriptTemp>().RealJ = (side == 0 ? j : 5 - j);
                             pick.GetComponent<PlacingScriptTemp>().Card = Card;
                         }
                     }
@@ -87,16 +97,8 @@ public class CardPlacer : MonoBehaviour
                             GameObject pick = Instantiate(PickPrefab, new Vector3(Camera.main.GetComponent<MapVisualiser>().ZeroX + i * Camera.main.GetComponent<MapVisualiser>().StepX, 2.5f, Camera.main.GetComponent<MapVisualiser>().ZeroZ + j * Camera.main.GetComponent<MapVisualiser>().StepZ), Quaternion.Euler(new Vector3(0, 0, 0)));
                             pick.tag = "destroyOnSpawning";
                             pick.AddComponent<PlacingScriptTemp>();
-                            if (Card.Side == 1)
-                            {
-                                pick.GetComponent<PlacingScriptTemp>().RealI = 4 - i;
-                                pick.GetComponent<PlacingScriptTemp>().RealJ = 5 - j;
-                            }
-                            else
-                            {
-                                pick.GetComponent<PlacingScriptTemp>().RealI = i;
-                                pick.GetComponent<PlacingScriptTemp>().RealJ = j;
-                            }
+                            pick.GetComponent<PlacingScriptTemp>().RealI = (side == 0 ? i : 4 - i);
+                            pick.GetComponent<PlacingScriptTemp>().RealJ = (side == 0 ? j : 5 - j);
                             pick.GetComponent<PlacingScriptTemp>().Card = Card;
                         }
                     }
@@ -105,20 +107,12 @@ public class CardPlacer : MonoBehaviour
                 {
                     GameObject pick = Instantiate(PickPrefab, new Vector3(Camera.main.GetComponent<MapVisualiser>().ZeroX + i * Camera.main.GetComponent<MapVisualiser>().StepX, 2.5f, Camera.main.GetComponent<MapVisualiser>().ZeroZ + j * Camera.main.GetComponent<MapVisualiser>().StepZ), Quaternion.Euler(new Vector3(0, 0, 0)));
                     pick.tag = "destroyOnSpawning";
-                    pick.AddComponent<PlacingScriptTemp>();
-                    if (Card.Side == 1)
-                    {
-                        pick.GetComponent<PlacingScriptTemp>().RealI = 4 - i;
-                        pick.GetComponent<PlacingScriptTemp>().RealJ = 5 - j;
-                    }
-                    else
-                    {
-                        pick.GetComponent<PlacingScriptTemp>().RealI = i;
-                        pick.GetComponent<PlacingScriptTemp>().RealJ = j;
-                    }
+                    pick.AddComponent<PlacingScriptTemp>();                   
+                    pick.GetComponent<PlacingScriptTemp>().RealI = (side == 0 ? i : 4 - i);
+                    pick.GetComponent<PlacingScriptTemp>().RealJ = (side == 0 ? j : 5 - j);                    
                     pick.GetComponent<PlacingScriptTemp>().Card = Card;
                 }
-                if (!Card.Abilities.Contains(Card.Ability.Cover) || map[i, j].Empty || map[i,j].Side != Card.Side)
+                if (!(Card.Abilities == 1) || map[i, j].Empty || map[i,j].Side != Card.Side)
                 {
                     break;
                 }

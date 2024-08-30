@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using Unity.Netcode;
 using UnityEngine;
 
 public class MapVisualiser : MonoBehaviour
@@ -14,27 +15,15 @@ public class MapVisualiser : MonoBehaviour
     [SerializeField] public float StepX;
     [SerializeField] public float StepZ;
     [SerializeField] float CardY;
-    [Range(0,1)]
     [SerializeField] public byte ViewSide;
-    public Card[,] ExampleMap;
+    [SerializeField]public Card[,] ExampleMap;
     List<GameObject> Cards = new();
     public int CardRenders = 0;
 
-    private void Start()
+    private void Awake()
     {
-        ExampleMap = new Card[Columns, Rows];
-        for (int i = 0; i < 30; i++)
-        {
-            ExampleMap[i%5,i/5] = new Card(0);
-        }
-        ExampleMap[0, 0] = new Card(1, 0);
-        ExampleMap[1, 0] = new Card(3, 0);
-        ExampleMap[0, 1] = new Card(5, 1);
-        ExampleMap[1, 2] = new Card(1, 1);
-        ExampleMap[3, 3] = new Card(4, 0);
-        ExampleMap[4, 4] = new Card(3, 0);
-        ExampleMap[1, 5] = new Card(2, 1);
-        Visualise(ExampleMap, ViewSide);
+        ViewSide = (GameObject.Find("NetworkStorage").GetComponent<NetworkObject>().IsOwner ? (byte)GameObject.Find("NetworkStorage").GetComponent<NetworkObject>().OwnerClientId : (byte)((byte)GameObject.Find("NetworkStorage").GetComponent<NetworkObject>().OwnerClientId * -1 + 1));
+        ExampleMap = Map.Read();
     }
 
     public void Visualise(Card[,] Map, byte Side)
@@ -47,7 +36,7 @@ public class MapVisualiser : MonoBehaviour
         {
             Destroy(render.gameObject);
         }
-        Debug.Log("Visualizing array");
+        Debug.Log("Visualizing array for client id" + (GameObject.Find("NetworkStorage").GetComponent<NetworkObject>().IsOwner ? GameObject.Find("NetworkStorage").GetComponent<NetworkObject>().OwnerClientId : (int)GameObject.Find("NetworkStorage").GetComponent<NetworkObject>().OwnerClientId * -1 + 1));        
         for (int i = 0; i < Columns; i++)
         {
             for(int j = 0; j < Rows; j++)
